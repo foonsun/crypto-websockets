@@ -67,7 +67,7 @@ impl Websocket {
             Subscription::BinanceUSwapMStream => 
                 format!("/stream?streams={}", topics.join("/")),
             Subscription::BinanceUSwapOrder =>
-                format!("/stream?streams={}", topics.join("/")),
+                format!("/ws/{}", topics.join("/")),
         };
 
         trace!("[Websocket] Subscribing to '{:?}'", subscription.clone());
