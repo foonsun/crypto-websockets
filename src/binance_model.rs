@@ -48,7 +48,7 @@ pub enum OrderStatus {
     /// The order has been accepted by the engine.
     New,
     /// A part of the order has been filled.
-    PartialyFilled,
+    PartiallyFilled,
     /// The order has been completely filled.
     Filled,
     /// The order has been canceled by the user.
@@ -477,7 +477,7 @@ pub struct OrderTradeEvent {
 pub struct OrderListUpdate {
     #[serde(rename = "E")]
     pub event_time: u64,
-    #[serde(rename = "S")]
+    #[serde(rename = "s")]
     pub symbol: String,
     #[serde(rename = "g")]
     order_list_id: i64,
@@ -500,7 +500,7 @@ pub struct OrderListUpdate {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderListTransaction {
-    #[serde(rename = "S")]
+    #[serde(rename = "s")]
     pub symbol: String,
     #[serde(rename = "i")]
     pub order_id: i64,

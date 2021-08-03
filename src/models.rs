@@ -79,7 +79,6 @@ pub enum BinanceSpotWebsocketEvent {
     BinanceSpotDepthOrderBook(BnWsRx<binance_model::DepthOrderBookEvent>),
     BinanceSpotBookTicker(BnWsRx<binance_model::BookTickerEvent>),
 
-    Text(String),
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -107,5 +106,4 @@ pub enum BinanceUSwapWebsocketEvent {
     BinanceUSwapDepthOrderBookEvent(BnWsRx<binance_uswap_model::DepthOrderBookEvent>),
     BinanceUSwapEtpNavEvent(BnWsRx<binance_uswap_model::EtpNavEvent>),
 
-    Text(String),
 }
