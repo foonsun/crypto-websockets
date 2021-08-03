@@ -79,6 +79,7 @@ impl Websocket {
                         match msg {
                             BinanceSpotWebsocketEvent::BinanceSpotAccountUpdate(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotAccountUpdate(msg.clone()))?,
                             BinanceSpotWebsocketEvent::BinanceSpotOrderTrade(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotOrderTrade(msg.clone()))?,
+                            BinanceSpotWebsocketEvent::BinanceSpotBalanceUpdate(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotBalanceUpdate(msg.clone()))?,
                             _ => (),
                         }
                     } 

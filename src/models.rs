@@ -27,6 +27,7 @@ pub enum WebsocketEvent {
     //Binance Spot
     BinanceSpotAccountUpdate(BnWsRx<binance_model::AccountUpdateEvent>),
     BinanceSpotOrderTrade(BnWsRx<binance_model::OrderTradeEvent>),
+    BinanceSpotBalanceUpdate(BnWsRx<binance_model::BalanceUpdate>),
     BinanceSpotAggrTrades(BnWsRx<binance_model::AggrTradesEvent>),
     BinanceSpotTrade(BnWsRx<binance_model::TradeEvent>),
     BinanceSpotOrderBook(BnWsRx<binance_model::OrderBook>),
@@ -67,6 +68,7 @@ pub enum WebsocketEvent {
 pub enum BinanceSpotWebsocketEvent {
     //Binance Spot
     BinanceSpotAccountUpdate(BnWsRx<binance_model::AccountUpdateEvent>),
+    BinanceSpotBalanceUpdate(BnWsRx<binance_model::BalanceUpdate>),
     BinanceSpotOrderTrade(BnWsRx<binance_model::OrderTradeEvent>),
     BinanceSpotAggrTrades(BnWsRx<binance_model::AggrTradesEvent>),
     BinanceSpotTrade(BnWsRx<binance_model::TradeEvent>),
