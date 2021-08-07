@@ -57,6 +57,8 @@ impl Websocket {
             Subscription::BinanceUSwapMStream => "wss://fstream.binance.com",
             Subscription::BinanceUSwapOrder => "wss://fstream.binance.com",
 
+            Subscription::HuobiUSwapMarketStream => "wss://api.hbdm.vn",
+            Subscription::HuobiUSwapOrderStream => "wss://api.hbdm.vn",
         };
 
         let end = match subscription {
@@ -68,6 +70,10 @@ impl Websocket {
                 format!("/stream?streams={}", topics.join("/")),
             Subscription::BinanceUSwapOrder =>
                 format!("/ws/{}", topics.join("/")),
+            Subscription::HuobiUSwapMarketStream =>
+                format!("/linear-swap-ws"),
+            Subscription::HuobiUSwapOrderStream =>
+                format!("/linear-swap-notification"),
         };
 
         trace!("[Websocket] Subscribing to '{:?}'", subscription.clone());
@@ -94,6 +100,13 @@ impl Websocket {
         self.subscriptions
             .get(subscription)
             .and_then(|token| StreamUnordered::take(streams, *token))
+    }
+
+    pub fn check_key(&self, subscription: &Subscription) -> Fallible<(&str, &str)> {
+        match self.credentials.get(&subscription).as_ref() {
+            None => Err(Error::NoApiKeySet.into()),
+            Some((k, s)) => Ok((k, s)),
+        }
     }
 
     pub fn parse_message(&self, msg: Message, token: usize) -> Fallible<(WebsocketEvent, usize)> {

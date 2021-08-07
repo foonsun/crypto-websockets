@@ -2,6 +2,7 @@ use serde::{Deserialize,  Serialize};
 use std::fmt::{self, Display};
 use crate::binance_model;
 use crate::binance_uswap_model;
+use crate::huobi_uswap_model;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
@@ -12,6 +13,9 @@ pub enum Subscription {
     BinanceSpotOrder,
     BinanceUSwapMStream,
     BinanceUSwapOrder,
+
+    HuobiUSwapMarketStream,
+    HuobiUSwapOrderStream,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,6 +61,23 @@ pub enum WebsocketEvent {
     BinanceUSwapOrderBook(BnWsRx<binance_uswap_model::OrderBook>),
     BinanceUSwapDepthOrderBookEvent(BnWsRx<binance_uswap_model::DepthOrderBookEvent>),
     BinanceUSwapEtpNavEvent(BnWsRx<binance_uswap_model::EtpNavEvent>),
+
+
+    //Huobi USDT Cross Swap
+    //Market
+    HuobiUSwapIncrementalOrderBook(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::IncrementalOrderBook>),
+    HuobiUSwapOrderBook(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::OrderBook>),
+    HuobiUSwapBBO(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::BBO>),
+    HuobiUSwapKline(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::Kline>),
+    HuobiUSwapTradeDetail(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::TradeDetail>),
+    //Account
+    HuobiUSwapAccount(huobi_uswap_model::WSAccountResponse<Vec<huobi_uswap_model::Account>>),
+    HuobiUSwapOrder(huobi_uswap_model::OrderWSResponse),
+    HuobiUSwapMatchOrder(huobi_uswap_model::MatchOrderWSResponse),
+    HuobiUSwapPosition(huobi_uswap_model::WSAccountResponse<Vec<huobi_uswap_model::Position>>),
+
+
+    Text(String),
 
 }
 
@@ -106,4 +127,29 @@ pub enum BinanceUSwapWebsocketEvent {
     BinanceUSwapDepthOrderBookEvent(BnWsRx<binance_uswap_model::DepthOrderBookEvent>),
     BinanceUSwapEtpNavEvent(BnWsRx<binance_uswap_model::EtpNavEvent>),
 
+}
+
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
+pub enum HuobiUSwapWebsocketEvent {
+    //Ping,Sub,Op
+    HuobiUSwapMarketPing(huobi_uswap_model::MarketPing),
+    HuobiUSwapSubStatus(huobi_uswap_model::SubStatus),
+    //Market
+    HuobiUSwapIncrementalOrderBook(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::IncrementalOrderBook>),
+    HuobiUSwapOrderBook(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::OrderBook>),
+    HuobiUSwapBBO(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::BBO>),
+    HuobiUSwapKline(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::Kline>),
+    HuobiUSwapTradeDetail(huobi_uswap_model::WSMarketResponse<huobi_uswap_model::TradeDetail>),
+    //Account
+    HuobiUSwapAccount(huobi_uswap_model::WSAccountResponse<Vec<huobi_uswap_model::Account>>),
+    HuobiUSwapOrder(huobi_uswap_model::OrderWSResponse),
+    HuobiUSwapMatchOrder(huobi_uswap_model::MatchOrderWSResponse),
+    HuobiUSwapPosition(huobi_uswap_model::WSAccountResponse<Vec<huobi_uswap_model::Position>>),
+    //sub status
+    HuobiUSwapOpStatus(huobi_uswap_model::OpStatus),
 }
