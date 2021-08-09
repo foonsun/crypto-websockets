@@ -322,7 +322,7 @@ pub fn build_query_string(parameters: BTreeMap<String, String>) -> String {
 pub fn sign_hmac_sha256_base64(secret: &str, digest: &str) -> String {
     use data_encoding::BASE64;
 
-    let signed_key = hmac::SigningKey::new(&digest::SHA256, secret.as_bytes());
+    let signed_key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
     let signature = hmac::sign(&signed_key, digest.as_bytes());
     BASE64.encode(signature.as_ref())
 }
