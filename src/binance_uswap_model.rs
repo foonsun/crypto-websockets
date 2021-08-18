@@ -349,32 +349,58 @@ pub struct AccountUpdateEvent {
     #[serde(rename = "E")]
     pub event_time: u64,
 
-    m: u64,
-    t: u64,
-    b: u64,
-    s: u64,
-
     #[serde(rename = "T")]
-    t_ignore: bool,
-    #[serde(rename = "W")]
-    w_ignore: bool,
-    #[serde(rename = "D")]
-    d_ignore: bool,
+    pub match_time: u64,
 
-    #[serde(rename = "B")]
-    pub balance: Vec<EventBalance>,
+    #[serde(rename = "a")]
+    pub account_event: EventBalance, 
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EventBalance {
+    #[serde(rename = "m")]
+    pub event: String,
+    #[serde(rename = "B")]
+    pub balance: Vec<BalanceItem>,
+    #[serde(rename = "P")]
+    pub position: Vec<PositionItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BalanceItem {
     #[serde(rename = "a")]
     pub asset: String,
-    #[serde(rename = "f")]
-    pub free: String,
-    #[serde(rename = "l")]
-    pub locked: String,
+    #[serde(rename = "wb")]
+    pub balance: String,
+    #[serde(rename = "cw")] 
+    pub cross_balance: String,
+    #[serde(rename = "bc")]
+    pub balance_change: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PositionItem {
+    #[serde(rename = "s")]
+    pub asset: String,
+    #[serde(rename = "pa")]
+    pub position_amount: String,
+    #[serde(rename = "ep")]
+    pub entry_price: String,
+    #[serde(rename = "cr")]
+    pub accumulated_realized: String,
+    #[serde(rename = "up")]
+    pub unrealized_pnl: String,
+    #[serde(rename = "mt")]
+    pub margin_type: String,
+    #[serde(rename = "iw")]
+    pub isolated_wallet: String,
+    #[serde(rename = "ps")]
+    pub position_side: String,
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
