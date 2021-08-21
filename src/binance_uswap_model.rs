@@ -364,7 +364,7 @@ pub struct EventBalance {
     #[serde(rename = "B")]
     pub balance: Vec<BalanceItem>,
     #[serde(rename = "P")]
-    pub position: Vec<PositionItem>,
+    pub position: Option<Vec<PositionItem>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
