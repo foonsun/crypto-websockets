@@ -234,8 +234,8 @@ pub struct TradeSubItem {
     pub trade_turnover: f64,
     pub created_at: u64,
     pub role: String,
-    pub profit: f64,
-    pub real_profit: f64,
+    pub profit: Option<f64>,
+    pub real_profit: Option<f64>,
 }
 
 
