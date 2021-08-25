@@ -216,7 +216,7 @@ impl Websocket {
                                         "op": "pong",
                                         "ts": ts,       
                                     });
-                                    println!("### op pong: {:?}", message);
+                                    debug!("### op pong: {:?}", message);
                                     let sink = self.sinks.get_mut(&subscription).unwrap();
                                     sink.send(tungstenite::Message::Text(message.to_string())).await?;
                 
