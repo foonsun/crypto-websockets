@@ -1179,6 +1179,14 @@ pub struct DepositAddress {
     pub url: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ListenKeyEvent {
+    #[serde(rename = "e")]
+    pub event_type: String,
+    #[serde(rename = "E")]
+    pub event_time: u64,
+}
+
 pub(crate) mod string_or_float {
     use std::fmt;
 
