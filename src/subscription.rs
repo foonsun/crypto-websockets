@@ -135,6 +135,7 @@ impl Websocket {
                         }
                     } 
                     else if subscription == Subscription::BinanceUSwapMStream {
+                        debug!("binance uswap websocket message:{:?}", message);
                         let msg: BinanceUSwapWebsocketEvent = from_str(&message)?;
                         match msg {
                             BinanceUSwapWebsocketEvent::BinanceUSwapBookTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapBookTickerEvent(msg.clone()))?,
