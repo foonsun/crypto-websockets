@@ -163,6 +163,8 @@ impl Websocket {
                             BinanceUSwapWebsocketEvent::BinanceUSwapOrderTradeEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapOrderTradeEvent(msg.clone()))?,
                             BinanceUSwapWebsocketEvent::BinanceUSwapAccountUpdateEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAccountUpdateEvent(msg.clone()))?,
                             BinanceUSwapWebsocketEvent::BinanceUSwapListenKeyEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapListenKeyEvent(msg.clone()))?,
+                            BinanceUSwapWebsocketEvent::BinanceUSwapMarginCallEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMarginCallEvent(msg.clone()))?,
+                            BinanceUSwapWebsocketEvent::BinanceUSwapAccountConfigEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAccountConfigEvent(msg.clone()))?,
                             _ => (),
                         }
                     }

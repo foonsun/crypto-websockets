@@ -1187,6 +1187,66 @@ pub struct ListenKeyEvent {
     pub event_time: u64,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MarginCallEvent {
+    #[serde(rename = "e")]
+    pub event_type: String,
+    #[serde(rename = "E")]
+    pub event_time: u64,
+    #[serde(rename = "cw")]
+    pub cross_balance: String,
+    #[serde(rename = "p")]
+    pub position: Vec<MarginPosition>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MarginPosition {
+    #[serde(rename = "s")]
+    pub symbol: String,
+    #[serde(rename = "ps")]
+    pub position_side: String,
+    #[serde(rename = "pa")]
+    pub position_amount: String,
+    #[serde(rename = "mt")]
+    pub margin_type: String,
+    #[serde(rename = "iw")]
+    pub isolated_balance: String,
+    #[serde(rename = "mp")]
+    pub mark_price: String,
+    #[serde(rename = "up")]
+    pub unrealized_pnl: String,
+    #[serde(rename = "mm")]
+    pub maintenance_margin: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AccountConfigEvent {
+    #[serde(rename = "e")]
+    pub event_type: String,
+    #[serde(rename = "E")]
+    pub event_time: u64,
+    #[serde(rename = "T")]
+    pub transact_time: u64,
+    #[serde(rename = "ac")]
+    pub account_config: Option<AccountConfig>,
+    #[serde(rename = "ai")]
+    pub multi_asset: Option<MultiAssetConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AccountConfig {
+    #[serde(rename = "s")]
+    pub symbol: String,
+    #[serde(rename = "l")]
+    pub leverage: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MultiAssetConfig {
+    #[serde(rename = "j")]
+    pub multi_asset_mode: bool,
+}
+
 pub(crate) mod string_or_float {
     use std::fmt;
 
