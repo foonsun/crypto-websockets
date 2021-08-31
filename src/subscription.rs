@@ -6,6 +6,7 @@ use std::{
     collections::HashMap,
     collections::BTreeMap,
 };
+use chrono;
 use failure::Fallible;
 use futures::prelude::*;
 use tracing::*;
@@ -81,6 +82,28 @@ impl Websocket {
                 });
 
                 let sink = self.sinks.get_mut(&Subscription::HuobiUSwapOrderStream).unwrap();
+                sink.send(tungstenite::Message::Text(message.to_string())).await?;
+            }
+            if *subscription == Subscription::OkexMarketStream {
+                self.subscribe(Subscription::OkexMarketStream, topics).await?;
+                self.okex_sub_market(Subscription::OkexMarketStream, topics).await?;
+            }
+            if *subscription == Subscription::OkexOrderStream {
+                self.subscribe(Subscription::OkexOrderStream, topics).await?;
+                let timestamp = chrono::Utc::now().timestamp().to_string();
+                let (key,passphrase, signature) = self.okex_generate_signature(subscription.clone(), &timestamp, "GET", "/users/self/verify");
+
+                let message = json!({
+                    "op": "login",
+                    "args": [{
+                        "api_key": key,
+                        "passphrase": passphrase,
+                        "timestamp": timestamp,
+                        "sign": signature,
+                    }]
+                });
+
+                let sink = self.sinks.get_mut(&Subscription::OkexOrderStream).unwrap();
                 sink.send(tungstenite::Message::Text(message.to_string())).await?;
             }
         }
@@ -168,6 +191,43 @@ impl Websocket {
                             _ => (),
                         }
                     }
+
+                    else if subscription == Subscription::OkexMarketStream {
+                        let msg: OkexWebsocketEvent = from_str(&message)?;
+                        match msg {
+                            OkexWebsocketEvent::OkexOrderBook(ref msg) => (self.handler)(WebsocketEvent::OkexOrderBook(msg.clone()))?,
+                            OkexWebsocketEvent::OkexTrade(ref msg) => (self.handler)(WebsocketEvent::OkexTrade(msg.clone()))?,
+                            _ => (),
+                        }
+                    }
+
+                    else if subscription == Subscription::OkexOrderStream {
+                        let msg: OkexWebsocketEvent = from_str(&message)?;
+                        match msg {
+                            OkexWebsocketEvent::OkexOrder(ref msg) => (self.handler)(WebsocketEvent::OkexOrder(msg.clone()))?,
+                            OkexWebsocketEvent::OkexAccountPosition(ref msg) => (self.handler)(WebsocketEvent::OkexAccountPosition(msg.clone()))?,
+                            OkexWebsocketEvent::OkexSubRsp(ref msg) => info!("Okex Sub Rsp: {:?}", msg.clone()),
+                            OkexWebsocketEvent::OkexSubEvent(ref msg) => {
+                                if msg.event == "login" {
+                                    if msg.code == "0" {
+                                        //okex sub private topics
+                                        self.okex_sub_account(subscription, subs).await?;
+                                    }
+                                    else {
+                                        info!("Okex login fail: {:?}",msg.clone());
+                                    }
+                                }
+                                else {
+                                    info!("Okex sub status: {:?}",msg.clone());
+                                }
+                                
+                            
+                            }
+                            _ => (),
+
+                        }
+                    }
+
                     else {
                         return Ok(());
                     }
@@ -275,6 +335,17 @@ impl Websocket {
 
     }
 
+    async fn okex_sub_market(&mut self, subscription: Subscription, topics: &[&str]) -> Fallible<()> {
+        let message = json!({
+            "op": "subscribe",
+            "args": topics,
+        });
+        let sink = self.sinks.get_mut(&subscription).unwrap();
+        sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+        Ok(())
+    }
+
     async fn huobi_sub_account(&mut self, subscription: Subscription,subs: &HashMap<Subscription, Vec<&str> >) -> Fallible<()> {
         let topics = subs.get(&subscription).unwrap();
         for topic in topics {
@@ -286,6 +357,18 @@ impl Websocket {
             let sink = self.sinks.get_mut(&subscription).unwrap();
             sink.send(tungstenite::Message::Text(message.to_string())).await?;
         }
+
+        Ok(())
+    }
+
+    async fn okex_sub_account(&mut self, subscription: Subscription, subs: &HashMap<Subscription, Vec<&str> >) -> Fallible<()> {
+        let topics = subs.get(&subscription).unwrap();
+        let message = json!({
+            "op": "subscribe",
+            "args": topics,
+        });
+        let sink = self.sinks.get_mut(&subscription).unwrap();
+        sink.send(tungstenite::Message::Text(message.to_string())).await?;
 
         Ok(())
     }
@@ -311,6 +394,16 @@ impl Websocket {
                     &format_str,
             )
 
+    }
+
+    fn okex_generate_signature(&mut self, subscription: Subscription, timestamp: &str, method: &str, url: &str) -> (String, String, String) {
+        // sign=CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(timestamp + 'GET' + '/users/self/verify' + body, SecretKey))
+        use data_encoding::BASE64;
+        let (key, secret, passphrase) = self.okex_check_key(&subscription).expect("no key");
+        let sign_message = format!("{}{}{}", timestamp, method, url);
+        let signed_key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
+        let signature = BASE64.encode(hmac::sign(&signed_key, sign_message.as_bytes()).as_ref());
+        (key.to_string(), passphrase.to_string(), signature)
     }
 
 }

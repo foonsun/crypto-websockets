@@ -27,7 +27,7 @@ pub type StoredSink = SplitSink<WSStream, tungstenite::Message>;
 
 #[allow(clippy::module_name_repetitions)]
 pub struct Websocket  {
-    credentials: HashMap<Subscription, (String, String) >,
+    credentials: HashMap<Subscription, (String, String, String)>,
     subscriptions: HashMap<Subscription, usize>,
     streams: StreamUnordered<StoredStream>,
     pub tokens: HashMap<usize, Subscription>,
@@ -36,7 +36,7 @@ pub struct Websocket  {
 }
 
 impl Websocket {
-    pub fn new<Callback: 'static>(credentials: HashMap<Subscription,(String, String)>, handler: Callback) -> Self
+    pub fn new<Callback: 'static>(credentials: HashMap<Subscription,(String, String, String)>, handler: Callback) -> Self
     where
         Callback: FnMut(WebsocketEvent) -> Fallible<()> + Send
     {
@@ -59,6 +59,9 @@ impl Websocket {
 
             Subscription::HuobiUSwapMarketStream => "wss://api.hbdm.vn",
             Subscription::HuobiUSwapOrderStream => "wss://api.hbdm.vn",
+
+            Subscription::OkexMarketStream => "wss://wsaws.okex.com:8443",
+            Subscription::OkexOrderStream => "wss://wsaws.okex.com:8443",
         };
 
         let end = match subscription {
@@ -74,6 +77,10 @@ impl Websocket {
                 format!("/linear-swap-ws"),
             Subscription::HuobiUSwapOrderStream =>
                 format!("/linear-swap-notification"),
+            Subscription::OkexMarketStream =>
+                format!("/ws/v5/public"),
+            Subscription::OkexOrderStream =>
+                format!("/ws/v5/private"),
         };
 
         trace!("[Websocket] Subscribing to '{:?}'", subscription.clone());
@@ -105,7 +112,14 @@ impl Websocket {
     pub fn check_key(&self, subscription: &Subscription) -> Fallible<(&str, &str)> {
         match self.credentials.get(&subscription).as_ref() {
             None => Err(Error::NoApiKeySet.into()),
-            Some((k, s)) => Ok((k, s)),
+            Some((k, s,p )) => Ok((k, s)),
+        }
+    }
+
+    pub fn okex_check_key(&self, subscription: &Subscription) -> Fallible<(&str, &str, &str)> {
+        match self.credentials.get(&subscription).as_ref() {
+            None => Err(Error::NoApiKeySet.into()),
+            Some((k, s, p)) => Ok((k, s, p)),
         }
     }
 

@@ -3,6 +3,7 @@ use std::fmt::{self, Display};
 use crate::binance_model;
 use crate::binance_uswap_model;
 use crate::huobi_uswap_model;
+use crate::okex_model;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
@@ -16,6 +17,9 @@ pub enum Subscription {
 
     HuobiUSwapMarketStream,
     HuobiUSwapOrderStream,
+
+    OkexMarketStream,
+    OkexOrderStream,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,6 +83,11 @@ pub enum WebsocketEvent {
     HuobiUSwapMatchOrder(huobi_uswap_model::MatchOrderWSResponse),
     HuobiUSwapPosition(huobi_uswap_model::WSAccountResponse<Vec<huobi_uswap_model::Position>>),
 
+    //Okex
+    OkexOrderBook(okex_model::WsRsp<okex_model::OrderBook>),
+    OkexTrade(okex_model::WsRsp<okex_model::Trade>),
+    OkexOrder(okex_model::WsRsp<okex_model::Order>),
+    OkexAccountPosition(okex_model::WsRsp<okex_model::BalancePositionData>),
 
     Text(String),
 
@@ -163,4 +172,21 @@ pub enum HuobiUSwapWebsocketEvent {
     HuobiUSwapOpStatus(huobi_uswap_model::OpStatus),
 
     Text(String),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
+pub enum OkexWebsocketEvent {
+    OkexSubRsp(okex_model::SubRsp),
+    OkexSubEvent(okex_model::SubEvent),
+
+    OkexOrderBook(okex_model::WsRsp<okex_model::OrderBook>),
+    OkexTrade(okex_model::WsRsp<okex_model::Trade>),
+
+    OkexOrder(okex_model::WsRsp<okex_model::Order>),
+
+    OkexAccountPosition(okex_model::WsRsp<okex_model::BalancePositionData>),
+
+    Pong,
 }
