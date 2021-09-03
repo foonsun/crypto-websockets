@@ -49,6 +49,12 @@ pub enum Channel {
         #[serde(rename = "instId")]
         inst_id: String,
     },
+    #[serde(rename = "trades")]
+    Trades {
+        #[serde(rename = "instId")]
+        inst_id: String,
+    },
+
     #[serde(rename = "balance_and_position")]
     BalancePosition {
         
@@ -127,7 +133,7 @@ pub enum Action {
 
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct LevelInfo (
+pub struct DepthInfo (
     #[serde(deserialize_with = "crate::parser::from_str")] 
     pub f64,
     #[serde(deserialize_with = "crate::parser::from_str")]
@@ -141,8 +147,8 @@ pub struct LevelInfo (
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderBook {
-    pub asks: Vec<LevelInfo>,
-    pub bids: Vec<LevelInfo>,
+    pub asks: Vec<DepthInfo>,
+    pub bids: Vec<DepthInfo>,
     #[serde(deserialize_with = "ts_milliseconds")]
     pub ts: DateTime<Utc>,
     pub checksum: i64,
@@ -166,9 +172,11 @@ pub struct PriceLimit {
 pub struct Trade {
     pub inst_id: String,
     pub trade_id: String,
+    #[serde(rename = "px")]
     #[serde(deserialize_with = "crate::parser::from_str")]
     pub price: f64,
     #[serde(deserialize_with = "crate::parser::from_str")]
+    #[serde(rename = "sz")]
     pub size: f64,
     pub side: String,
     #[serde(deserialize_with = "ts_milliseconds")]

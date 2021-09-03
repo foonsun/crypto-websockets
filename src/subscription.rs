@@ -336,9 +336,32 @@ impl Websocket {
     }
 
     async fn okex_sub_market(&mut self, subscription: Subscription, topics: &[&str]) -> Fallible<()> {
+
+        let mut market_topics = vec![HashMap::new()];
+        for symbol in topics {
+            let mut orderbook_topic = HashMap::new();
+            orderbook_topic.insert("channel".to_string(), "books50-l2-tbt".to_string());
+            orderbook_topic.insert("instId".to_string(), (*symbol).to_string());
+
+            market_topics.push(orderbook_topic);
+
+            let mut pricelimit_topic = HashMap::new();
+            pricelimit_topic.insert("channel".to_string(), "price-limit".to_string());
+            pricelimit_topic.insert("instId".to_string(), (*symbol).to_string());
+
+            market_topics.push(pricelimit_topic);
+
+            let mut trade_topic = HashMap::new();
+            trade_topic.insert("channel".to_string(), "trades".to_string());
+            trade_topic.insert("instId".to_string(), (*symbol).to_string());
+
+            market_topics.push(trade_topic);
+            
+        }
+
         let message = json!({
             "op": "subscribe",
-            "args": topics,
+            "args": market_topics,
         });
         let sink = self.sinks.get_mut(&subscription).unwrap();
         sink.send(tungstenite::Message::Text(message.to_string())).await?;
@@ -363,10 +386,24 @@ impl Websocket {
 
     async fn okex_sub_account(&mut self, subscription: Subscription, subs: &HashMap<Subscription, Vec<&str> >) -> Fallible<()> {
         let topics = subs.get(&subscription).unwrap();
+        let mut order_topics = vec![HashMap::new()];
+
+        let mut account_topics = HashMap::new();
+        account_topics.insert("channel".to_string(), "balance_and_position".to_string()); 
+        order_topics.push(account_topics);
+
+        for inst_type in topics {
+            let mut order_topic = HashMap::new();
+            order_topic.insert("channel".to_string(), "orders".to_string());
+            order_topic.insert("instType".to_string(), (*inst_type).to_string());
+            order_topics.push(order_topic);
+        }
+
         let message = json!({
             "op": "subscribe",
-            "args": topics,
+            "args": order_topics,
         });
+
         let sink = self.sinks.get_mut(&subscription).unwrap();
         sink.send(tungstenite::Message::Text(message.to_string())).await?;
 
