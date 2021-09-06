@@ -96,7 +96,7 @@ impl Websocket {
                 let message = json!({
                     "op": "login",
                     "args": [{
-                        "api_key": key,
+                        "apiKey": key,
                         "passphrase": passphrase,
                         "timestamp": timestamp,
                         "sign": signature,
@@ -208,6 +208,7 @@ impl Websocket {
                             OkexWebsocketEvent::OkexAccountPosition(ref msg) => (self.handler)(WebsocketEvent::OkexAccountPosition(msg.clone()))?,
                             OkexWebsocketEvent::OkexSubRsp(ref msg) => info!("Okex Sub Rsp: {:?}", msg.clone()),
                             OkexWebsocketEvent::OkexSubEvent(ref msg) => {
+                                info!("Okex Sub Event: {:?}", msg.clone());
                                 if msg.event == "login" {
                                     if msg.code == "0" {
                                         //okex sub private topics

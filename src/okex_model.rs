@@ -353,7 +353,7 @@ pub struct BalData {
     pub ccy: String,
     pub cash_bal: String,
     #[serde(deserialize_with = "ts_milliseconds")]
-    pub utime: DateTime<Utc>,
+    pub u_time: DateTime<Utc>,
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
