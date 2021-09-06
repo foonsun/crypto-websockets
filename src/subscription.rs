@@ -204,6 +204,7 @@ impl Websocket {
                     else if subscription == Subscription::OkexOrderStream {
                         let msg: OkexWebsocketEvent = from_str(&message)?;
                         match msg {
+                            OkexWebsocketEvent::OkexAccount(ref msg) => (self.handler)(WebsocketEvent::OkexAccount(msg.clone()))?,
                             OkexWebsocketEvent::OkexOrder(ref msg) => (self.handler)(WebsocketEvent::OkexOrder(msg.clone()))?,
                             OkexWebsocketEvent::OkexAccountPosition(ref msg) => (self.handler)(WebsocketEvent::OkexAccountPosition(msg.clone()))?,
                             OkexWebsocketEvent::OkexSubRsp(ref msg) => info!("Okex Sub Rsp: {:?}", msg.clone()),
@@ -399,6 +400,11 @@ impl Websocket {
             order_topic.insert("instType".to_string(), (*inst_type).to_string());
             order_topics.push(order_topic);
         }
+
+        let mut acc_topics = HashMap::new();
+        acc_topics.insert("channel".to_string(), "account".to_string());
+        order_topics.push(acc_topics);
+
 
         let message = json!({
             "op": "subscribe",

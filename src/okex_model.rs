@@ -58,6 +58,11 @@ pub enum Channel {
     #[serde(rename = "balance_and_position")]
     BalancePosition {
         
+    },
+
+    #[serde(rename = "account")]
+    Account {
+
     }
 }
 
@@ -371,6 +376,39 @@ pub struct PosData {
     pub avg_px: String,
     #[serde(deserialize_with = "ts_milliseconds")]
     pub u_time: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BalanceData {
+    #[serde(deserialize_with = "ts_milliseconds")]
+    pub u_time: DateTime<Utc>,
+
+    pub total_eq: String,
+    pub adj_eq: String,
+    pub iso_eq: String,
+    pub ord_froz: String,
+    pub imr: String,
+    pub mmr: String,
+    pub notional_usd: String,
+    pub mgn_ratio: String,
+    pub details: Vec<BalanceDetail>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BalanceDetail {
+    pub avail_bal: String,
+    pub avail_eq: String,
+    pub ccy: String,
+    pub cash_bal: String,
+    pub u_time: String,
+    pub dis_eq: String,
+    pub eq: String,
+    pub eq_usd: String,
+    pub frozen_bal: String,
+    pub max_loan: String,
+    pub mgn_ratio: String,
 }
 
 
