@@ -89,6 +89,7 @@ pub enum WebsocketEvent {
     OkexOrder(okex_model::WsRsp<okex_model::Order>),
     OkexAccountPosition(okex_model::WsRsp<okex_model::BalancePositionData>),
     OkexAccount(okex_model::WsRsp<okex_model::BalanceData>),
+    OkexPosition(okex_model::WsRsp<okex_model::PositionData>),
 
     Text(String),
 
@@ -190,6 +191,8 @@ pub enum OkexWebsocketEvent {
     OkexAccountPosition(okex_model::WsRsp<okex_model::BalancePositionData>),
 
     OkexAccount(okex_model::WsRsp<okex_model::BalanceData>),
+
+    OkexPosition(okex_model::WsRsp<okex_model::PositionData>),
 
     Pong,
 }

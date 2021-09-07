@@ -63,7 +63,12 @@ pub enum Channel {
     #[serde(rename = "account")]
     Account {
 
+    },
+
+    #[serde(rename = "positions")]
+    Position {
     }
+
 }
 
 impl Channel {
@@ -409,6 +414,37 @@ pub struct BalanceDetail {
     pub frozen_bal: String,
     pub max_loan: String,
     pub mgn_ratio: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PositionData {
+    pub inst_type: String,
+    pub mgn_mode: String,
+    pub pos_id: String,
+    pub pos_side: String,
+    pub pos: String,
+    pub pos_ccy: String,
+    pub avail_pos: String,
+    pub avg_px: String,
+    pub upl: String,
+    pub upl_ratio: String,
+    pub inst_id: String,
+    pub lever: String,
+    pub imr: String,
+    pub margin: String,
+    pub mgn_ratio: String,
+    pub mmr: String,
+    pub liab: String,
+    pub liab_ccy: String,
+    pub interest: String,
+    pub notional_usd: String,
+    pub adl: String,
+    pub ccy: String,
+    pub last: String,
+    pub c_time: String,
+    pub u_time: String,
+    pub p_time: String,
 }
 
 
