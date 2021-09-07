@@ -1,3 +1,6 @@
+#![allow(clippy::too_many_lines,
+    clippy::let_unit_value,
+    clippy::missing_panics_doc)]
 use crate::{
     models::*, 
     websocket::*,
@@ -30,18 +33,6 @@ type WSStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 pub type StoredStream = SplitStream<WSStream>;
 pub type StoredSink = SplitSink<WSStream, tungstenite::Message>;
-
-#[allow(clippy::module_name_repetitions)]
-pub struct HuobiWebsocket  {
-    credential: Option<(String, String)>,
-    subscriptions: HashMap<Subscription, usize>,
-    tokens: HashMap<usize, Subscription>,
-    streams: StreamUnordered<StoredStream>,
-    pub sinks: HashMap<Subscription, StoredSink>,
-    pub handler: Box<dyn FnMut(WebsocketEvent) -> Fallible<()>>,
-}
-
-
 
 
 impl Websocket {
@@ -128,196 +119,233 @@ impl Websocket {
 
     }
 
+    async fn rx_handler1(&mut self, subs: &HashMap<Subscription, Vec<&str>>) -> Fallible<()> {
+        loop {
+            tokio::select! {
+                _ = self.ping_timer.tick() => {
+                    println!("ping timer.");
+                }
+                Some((msg, token)) = self.streams.next() => {
+
+                    println!("msg:{:?} {:?}", msg, token);
+                }
+
+            };
+
+        }
+
+
+        Ok(())
+    
+    }
 
 
     async fn rx_handler(&mut self, subs: &HashMap<Subscription, Vec<&str>>) -> Fallible<()> {
-        while let Some((message, token)) = self.try_next().await? {
-            let subscription = self.tokens.get(&token).unwrap().clone();
-            let bin = match message {
-                Message::Text(message) => {
-                    if subscription == Subscription::BinanceSpotMStream {
-                        let msg: BinanceSpotWebsocketEvent = from_str(&message)?;
-                        match msg {
-                            BinanceSpotWebsocketEvent::BinanceSpotAggrTrades(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotAggrTrades(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotTrade(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotTrade(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotOrderBook(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotOrderBook(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotDayTicker(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotDayTicker(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotDayTickerAll(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotDayTickerAll(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotKline(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotKline(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotDepthOrderBook(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotDepthOrderBook(msg.clone()))?,
-                            _ => (),
-                        }
-                    }
-                    else if subscription == Subscription::BinanceSpotOrder {
-                        let msg: BinanceSpotWebsocketEvent = from_str(&message)?;
-                        match msg {
-                            BinanceSpotWebsocketEvent::BinanceSpotAccountUpdate(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotAccountUpdate(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotOrderTrade(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotOrderTrade(msg.clone()))?,
-                            BinanceSpotWebsocketEvent::BinanceSpotBalanceUpdate(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotBalanceUpdate(msg.clone()))?,
-                            _ => (),
-                        }
-                    } 
-                    else if subscription == Subscription::BinanceUSwapMStream {
-                        let msg: BinanceUSwapWebsocketEvent = from_str(&message)?;
-                        match msg {
-                            BinanceUSwapWebsocketEvent::BinanceUSwapBookTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapBookTickerEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapAggrTradesEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAggrTradesEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapDayTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapDayTickerEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapMiniTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMiniTickerEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapVec(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapVec(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapIndexPriceEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapIndexPriceEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapMarkPriceEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMarkPriceEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapVecMarkPriceEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapVecMarkPriceEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapTradeEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapTradeEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapContinuousKlineEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapContinuousKlineEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapKlineEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapKlineEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapIndexKlineEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapIndexKlineEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapLiquidationEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapLiquidationEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapOrderBook(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapOrderBook(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapDepthOrderBookEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapDepthOrderBookEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapEtpNavEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapEtpNavEvent(msg.clone()))?,
-                            _ => (),
-                        }
-                    }
-                    else if subscription == Subscription::BinanceUSwapOrder {
-                        debug!("binance uswap websocket message:{:?}", message);
-                        let msg: BinanceUSwapWebsocketEvent = from_str(&message)?;
-                        match msg {
-                            BinanceUSwapWebsocketEvent::BinanceUSwapOrderTradeEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapOrderTradeEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapAccountUpdateEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAccountUpdateEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapListenKeyEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapListenKeyEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapMarginCallEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMarginCallEvent(msg.clone()))?,
-                            BinanceUSwapWebsocketEvent::BinanceUSwapAccountConfigEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAccountConfigEvent(msg.clone()))?,
-                            _ => (),
-                        }
-                    }
+        loop {
+            tokio::select! {
+                _ = self.ping_timer.tick() => {
+                    println!("ping timer");
+                }
 
-                    else if subscription == Subscription::OkexMarketStream {
-                        let msg: OkexWebsocketEvent = from_str(&message)?;
-                        match msg {
-                            OkexWebsocketEvent::OkexOrderBook(ref msg) => (self.handler)(WebsocketEvent::OkexOrderBook(msg.clone()))?,
-                            OkexWebsocketEvent::OkexTrade(ref msg) => (self.handler)(WebsocketEvent::OkexTrade(msg.clone()))?,
-                            _ => (),
-                        }
-                    }
-
-                    else if subscription == Subscription::OkexOrderStream {
-                        let msg: OkexWebsocketEvent = from_str(&message)?;
-                        match msg {
-                            OkexWebsocketEvent::OkexAccount(ref msg) => (self.handler)(WebsocketEvent::OkexAccount(msg.clone()))?,
-                            OkexWebsocketEvent::OkexPosition(ref msg) => (self.handler)(WebsocketEvent::OkexPosition(msg.clone()))?,
-                            OkexWebsocketEvent::OkexOrder(ref msg) => (self.handler)(WebsocketEvent::OkexOrder(msg.clone()))?,
-                            OkexWebsocketEvent::OkexAccountPosition(ref msg) => (self.handler)(WebsocketEvent::OkexAccountPosition(msg.clone()))?,
-                            OkexWebsocketEvent::OkexSubRsp(ref msg) => info!("Okex Sub Rsp: {:?}", msg.clone()),
-                            OkexWebsocketEvent::OkexSubEvent(ref msg) => {
-                                info!("Okex Sub Event: {:?}", msg.clone());
-                                if msg.event == "login" {
-                                    if msg.code == "0" {
-                                        //okex sub private topics
-                                        self.okex_sub_account(subscription, subs).await?;
-                                    }
-                                    else {
-                                        info!("Okex login fail: {:?}",msg.clone());
-                                    }
-                                }
-                                else {
-                                    info!("Okex sub status: {:?}",msg.clone());
-                                }
-                                
-                            
-                            }
-                            _ => (),
-
-                        }
-                    }
-
-                    else {
-                        return Ok(());
-                    }
-
-                },
-                Message::Binary(b) => {
-                    if subscription == Subscription::HuobiUSwapMarketStream {
-                        let mut d = GzDecoder::new(&*b);
-                        let mut s = String::new();
-                        d.read_to_string(&mut s).unwrap();
-
-                        trace!("Incoming websocket message {:?}", s);
-                        
-                        let msg: HuobiUSwapWebsocketEvent = from_str(&s)?;
-                        match msg {
-                            HuobiUSwapWebsocketEvent::HuobiUSwapMarketPing(ref msg) => {
-                                let ts = chrono::Local::now().timestamp_millis();
-                                let message = json!({
-                                   "pong": ts,       
-                                });
-                                let sink = self.sinks.get_mut(&subscription).unwrap();
-                                sink.send(tungstenite::Message::Text(message.to_string())).await?;
-
-                            },
-                            HuobiUSwapWebsocketEvent::HuobiUSwapSubStatus(ref msg) => {
-                                info!("sub status:{:?}", msg.clone());
-                            },
-                            HuobiUSwapWebsocketEvent::HuobiUSwapOrderBook(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapOrderBook(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapIncrementalOrderBook(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapIncrementalOrderBook(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapBBO(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapBBO(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapKline(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapKline(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapTradeDetail(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapTradeDetail(msg.clone()))?,
-                            _ => (),
-                        }
-                    }
-                    if subscription == Subscription::HuobiUSwapOrderStream {
-                        let mut d = GzDecoder::new(&*b);
-                        let mut s = String::new();
-                        d.read_to_string(&mut s).unwrap();
-
-                        trace!("Incoming websocket message {:?}", s);
-                        
-                        let msg: HuobiUSwapWebsocketEvent = from_str(&s)?;
-                        match msg {
-                            HuobiUSwapWebsocketEvent::HuobiUSwapOpStatus(ref msg) => {
-                                if msg.op == "ping" {
-                                    let ts = chrono::Local::now().timestamp_millis();
-                                    let message = json!({
-                                        "op": "pong",
-                                        "ts": ts,       
-                                    });
-                                    debug!("### op pong: {:?}", message);
-                                    let sink = self.sinks.get_mut(&subscription).unwrap();
-                                    sink.send(tungstenite::Message::Text(message.to_string())).await?;
-                
-                                }
-                                if msg.op == "auth" {
-                                    if let Some(err_code) = msg.err_code {
-                                        if err_code == 0 {
-                                            self.huobi_sub_account(subscription, subs).await?;
+                Some((msg, token)) = self.streams.next() => {
+                    match msg {
+                        StreamYield::Finished(s) => warn!("finished stream: {:?}", s.token()),
+                        StreamYield::Item(s) => {
+                            let message = s.unwrap();
+                            let subscription = self.tokens.get(&token).unwrap().clone();
+                            let bin = match message {
+                                Message::Text(message) => {
+                                    if subscription == Subscription::BinanceSpotMStream {
+                                        let msg: BinanceSpotWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            BinanceSpotWebsocketEvent::BinanceSpotAggrTrades(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotAggrTrades(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotTrade(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotTrade(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotOrderBook(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotOrderBook(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotDayTicker(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotDayTicker(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotDayTickerAll(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotDayTickerAll(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotKline(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotKline(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotDepthOrderBook(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotDepthOrderBook(msg.clone()))?,
+                                            _ => (),
                                         }
                                     }
-                                }
-                                if let Some(_err_code) = msg.err_code {
-                                    info!("{:?}", msg);
-                                }
+                                    else if subscription == Subscription::BinanceSpotOrder {
+                                        let msg: BinanceSpotWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            BinanceSpotWebsocketEvent::BinanceSpotAccountUpdate(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotAccountUpdate(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotOrderTrade(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotOrderTrade(msg.clone()))?,
+                                            BinanceSpotWebsocketEvent::BinanceSpotBalanceUpdate(ref msg) => (self.handler)(WebsocketEvent::BinanceSpotBalanceUpdate(msg.clone()))?,
+                                            _ => (),
+                                        }
+                                    } 
+                                    else if subscription == Subscription::BinanceUSwapMStream {
+                                        let msg: BinanceUSwapWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapBookTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapBookTickerEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapAggrTradesEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAggrTradesEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapDayTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapDayTickerEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapMiniTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMiniTickerEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapVec(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapVec(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapIndexPriceEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapIndexPriceEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapMarkPriceEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMarkPriceEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapVecMarkPriceEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapVecMarkPriceEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapTradeEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapTradeEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapContinuousKlineEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapContinuousKlineEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapKlineEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapKlineEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapIndexKlineEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapIndexKlineEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapLiquidationEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapLiquidationEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapOrderBook(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapOrderBook(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapDepthOrderBookEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapDepthOrderBookEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapEtpNavEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapEtpNavEvent(msg.clone()))?,
+                                            _ => (),
+                                        }
+                                    }
+                                    else if subscription == Subscription::BinanceUSwapOrder {
+                                        debug!("binance uswap websocket message:{:?}", message);
+                                        let msg: BinanceUSwapWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapOrderTradeEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapOrderTradeEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapAccountUpdateEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAccountUpdateEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapListenKeyEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapListenKeyEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapMarginCallEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapMarginCallEvent(msg.clone()))?,
+                                            BinanceUSwapWebsocketEvent::BinanceUSwapAccountConfigEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapAccountConfigEvent(msg.clone()))?,
+                                            _ => (),
+                                        }
+                                    }
+        
+                                    else if subscription == Subscription::OkexMarketStream {
+                                        let msg: OkexWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            OkexWebsocketEvent::OkexOrderBook(ref msg) => (self.handler)(WebsocketEvent::OkexOrderBook(msg.clone()))?,
+                                            OkexWebsocketEvent::OkexTrade(ref msg) => (self.handler)(WebsocketEvent::OkexTrade(msg.clone()))?,
+                                            _ => (),
+                                        }
+                                    }
+        
+                                    else if subscription == Subscription::OkexOrderStream {
+                                        let msg: OkexWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            OkexWebsocketEvent::OkexAccount(ref msg) => (self.handler)(WebsocketEvent::OkexAccount(msg.clone()))?,
+                                            OkexWebsocketEvent::OkexPosition(ref msg) => (self.handler)(WebsocketEvent::OkexPosition(msg.clone()))?,
+                                            OkexWebsocketEvent::OkexOrder(ref msg) => (self.handler)(WebsocketEvent::OkexOrder(msg.clone()))?,
+                                            OkexWebsocketEvent::OkexAccountPosition(ref msg) => (self.handler)(WebsocketEvent::OkexAccountPosition(msg.clone()))?,
+                                            OkexWebsocketEvent::OkexSubRsp(ref msg) => info!("Okex Sub Rsp: {:?}", msg.clone()),
+                                            OkexWebsocketEvent::OkexSubEvent(ref msg) => {
+                                                info!("Okex Sub Event: {:?}", msg.clone());
+                                                if msg.event == "login" {
+                                                    if msg.code == "0" {
+                                                        //okex sub private topics
+                                                        self.okex_sub_account(subscription, subs).await?;
+                                                    }
+                                                    else {
+                                                        info!("Okex login fail: {:?}",msg.clone());
+                                                    }
+                                                }
+                                                else {
+                                                    info!("Okex sub status: {:?}",msg.clone());
+                                                }
+                                                
+                                            
+                                            }
+                                            _ => (),
+        
+                                        }
+                                    }
+        
+                                    else {
+                                        return Ok(());
+                                    }
+        
+                                },
+                                Message::Binary(b) => {
+                                    if subscription == Subscription::HuobiUSwapMarketStream {
+                                        let mut d = GzDecoder::new(&*b);
+                                        let mut s = String::new();
+                                        d.read_to_string(&mut s).unwrap();
+        
+                                        trace!("Incoming websocket message {:?}", s);
+                                        
+                                        let msg: HuobiUSwapWebsocketEvent = from_str(&s)?;
+                                        match msg {
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapMarketPing(ref msg) => {
+                                                let ts = chrono::Local::now().timestamp_millis();
+                                                let message = json!({
+                                                "pong": ts,       
+                                                });
+                                                let sink = self.sinks.get_mut(&subscription).unwrap();
+                                                sink.send(tungstenite::Message::Text(message.to_string())).await?;
+        
+                                            },
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapSubStatus(ref msg) => {
+                                                info!("sub status:{:?}", msg.clone());
+                                            },
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapOrderBook(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapOrderBook(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapIncrementalOrderBook(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapIncrementalOrderBook(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapBBO(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapBBO(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapKline(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapKline(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapTradeDetail(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapTradeDetail(msg.clone()))?,
+                                            _ => (),
+                                        }
+                                    }
+                                    if subscription == Subscription::HuobiUSwapOrderStream {
+                                        let mut d = GzDecoder::new(&*b);
+                                        let mut s = String::new();
+                                        d.read_to_string(&mut s).unwrap();
+        
+                                        trace!("Incoming websocket message {:?}", s);
+                                        
+                                        let msg: HuobiUSwapWebsocketEvent = from_str(&s)?;
+                                        match msg {
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapOpStatus(ref msg) => {
+                                                if msg.op == "ping" {
+                                                    let ts = chrono::Local::now().timestamp_millis();
+                                                    let message = json!({
+                                                        "op": "pong",
+                                                        "ts": ts,       
+                                                    });
+                                                    debug!("### op pong: {:?}", message);
+                                                    let sink = self.sinks.get_mut(&subscription).unwrap();
+                                                    sink.send(tungstenite::Message::Text(message.to_string())).await?;
+                                
+                                                }
+                                                if msg.op == "auth" {
+                                                    if let Some(err_code) = msg.err_code {
+                                                        if err_code == 0 {
+                                                            self.huobi_sub_account(subscription, subs).await?;
+                                                        }
+                                                    }
+                                                }
+                                                if let Some(_err_code) = msg.err_code {
+                                                    info!("{:?}", msg);
+                                                }
+        
+                                            },
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapSubStatus(ref msg) => {
+                                                info!("sub status:{:?}", msg.clone());
+                                            },
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapAccount(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapAccount(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapOrder(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapOrder(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapMatchOrder(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapMatchOrder(msg.clone()))?,
+                                            HuobiUSwapWebsocketEvent::HuobiUSwapPosition(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapPosition(msg.clone()))?,
+                                            _ => (),
+                                        }
+        
+                                    }
+                                },
+        
+                                Message::Pong(c) => (),
+                                Message::Ping(d) => (),
+                                Message::Close(..) => return Err(failure::format_err!("Socket closed")),
+                            };
 
-                            },
-                            HuobiUSwapWebsocketEvent::HuobiUSwapSubStatus(ref msg) => {
-                                info!("sub status:{:?}", msg.clone());
-                            },
-                            HuobiUSwapWebsocketEvent::HuobiUSwapAccount(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapAccount(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapOrder(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapOrder(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapMatchOrder(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapMatchOrder(msg.clone()))?,
-                            HuobiUSwapWebsocketEvent::HuobiUSwapPosition(ref msg) => (self.handler)(WebsocketEvent::HuobiUSwapPosition(msg.clone()))?,
-                            _ => (),
+
                         }
+                    };
 
-                    }
-                },
+                    // huobi ws is gziped,so need to parse it again.
+                }
+    };
 
-                Message::Pong(c) => (),
-                Message::Ping(d) => (),
-                Message::Close(..) => return Err(failure::format_err!("Socket closed")),
-            };
-            // huobi ws is gziped,so need to parse it again.
-        }
+    }
 
         Ok(())
     }

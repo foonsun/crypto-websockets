@@ -9,10 +9,12 @@ use std::{
     collections::HashMap,
     pin::Pin,
     task::{Context, Poll},
+    time::Duration,
 };
 use streamunordered::{StreamUnordered, StreamYield};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+use tokio::time::Interval;
 use tracing::*;
 use tungstenite::Message;
 use url::Url;
@@ -29,10 +31,11 @@ pub type StoredSink = SplitSink<WSStream, tungstenite::Message>;
 pub struct Websocket  {
     credentials: HashMap<Subscription, (String, String, String)>,
     subscriptions: HashMap<Subscription, usize>,
-    streams: StreamUnordered<StoredStream>,
+    pub streams: StreamUnordered<StoredStream>,
     pub tokens: HashMap<usize, Subscription>,
     pub sinks: HashMap<Subscription, StoredSink>,
     pub handler: Box<dyn FnMut(WebsocketEvent) -> Fallible<()>>,
+    pub ping_timer: Interval,
 }
 
 impl Websocket {
@@ -47,6 +50,7 @@ impl Websocket {
             streams: StreamUnordered::new(),
             sinks: HashMap::new(),
             handler: Box::new(handler),
+            ping_timer: tokio::time::interval(Duration::from_secs(5)),
         }
     }
 
