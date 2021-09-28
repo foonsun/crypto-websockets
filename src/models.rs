@@ -4,6 +4,7 @@ use crate::binance_model;
 use crate::binance_uswap_model;
 use crate::huobi_uswap_model;
 use crate::okex_model;
+use crate::ftx_model;
 
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
@@ -20,6 +21,9 @@ pub enum Subscription {
 
     OkexMarketStream,
     OkexOrderStream,
+
+    FtxMarketStream,
+    FtxOrderStream,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,7 +33,7 @@ pub struct BnWsRx<T> {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum WebsocketEvent {
     //Binance Spot
@@ -90,6 +94,9 @@ pub enum WebsocketEvent {
     OkexAccountPosition(okex_model::WsRsp<okex_model::BalancePositionData>),
     OkexAccount(okex_model::WsRsp<okex_model::BalanceData>),
     OkexPosition(okex_model::WsRsp<okex_model::PositionData>),
+
+    //Ftx
+    FtxRsp(ftx_model::Response),
 
     Text(String),
 
@@ -176,7 +183,7 @@ pub enum HuobiUSwapWebsocketEvent {
     Text(String),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
 pub enum OkexWebsocketEvent {
@@ -195,4 +202,11 @@ pub enum OkexWebsocketEvent {
     OkexPosition(okex_model::WsRsp<okex_model::PositionData>),
 
     Pong,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
+pub enum FtxWebsocketEvent {
+    FtxRsp(ftx_model::Response),
 }

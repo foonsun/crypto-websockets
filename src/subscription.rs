@@ -3,6 +3,7 @@
     clippy::missing_panics_doc)]
 use crate::{
     models::*, 
+    ftx_model,
     websocket::*,
 };
 use std::{
@@ -13,13 +14,13 @@ use chrono;
 use failure::Fallible;
 use futures::prelude::*;
 use tracing::*;
-use std::time::Duration;
 use std::thread;
 use tungstenite::Message;
 use serde_json::{json, from_str};
 use ring::{digest, hmac};
 use flate2::read::GzDecoder;
 use std::io::Read;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::net::TcpStream;
 use streamunordered::{StreamUnordered, StreamYield};
 use futures::{prelude::*, stream::SplitStream, stream::SplitSink};
@@ -97,6 +98,29 @@ impl Websocket {
                 let sink = self.sinks.get_mut(&Subscription::OkexOrderStream).unwrap();
                 sink.send(tungstenite::Message::Text(message.to_string())).await?;
             }
+
+            if *subscription == Subscription::FtxMarketStream {
+                self.subscribe(Subscription::FtxMarketStream, topics).await?;
+                self.ftx_sub_market(Subscription::FtxMarketStream, topics).await?;
+
+            }
+            if *subscription == Subscription::FtxOrderStream {
+                self.subscribe(Subscription::FtxOrderStream, topics).await?;
+                let timestamp = chrono::Utc::now().timestamp_millis().to_string();
+                let (key, subaccount, signature) = self.ftx_generate_signature(subscription.clone(), &timestamp);
+                
+                let message = json!({
+                    "op": "login",
+                    "args": {
+                        "key": key,
+                        "sign": signature,
+                        "time": timestamp,
+                        "subaccount": subaccount,
+                    }
+                });
+                let sink = self.sinks.get_mut(&Subscription::FtxOrderStream).unwrap();
+                sink.send(tungstenite::Message::Text(message.to_string())).await?;
+            }
         }
 
         self.rx_handler(&subs).await?;
@@ -145,6 +169,16 @@ impl Websocket {
             tokio::select! {
                 _ = self.ping_timer.tick() => {
                     println!("ping timer");
+                    for subscription in subs.keys() {
+                        if *subscription == Subscription::FtxOrderStream || *subscription == Subscription::FtxMarketStream {
+                            let topics = subs.get(&subscription).unwrap();
+                            let message= json!({
+                                "op": "ping",
+                            });
+                            let sink = self.sinks.get_mut(&subscription).unwrap();
+                            sink.send(tungstenite::Message::Text(message.to_string())).await?;
+                        } 
+                    }
                 }
 
                 Some((msg, token)) = self.streams.next() => {
@@ -248,6 +282,40 @@ impl Websocket {
                                             }
                                             _ => (),
         
+                                        }
+                                    }
+
+                                    else if subscription == Subscription::FtxMarketStream {
+                                        let msg: FtxWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            FtxWebsocketEvent::FtxRsp(ref msg) => {
+                                                info!("Ftx msg: {:?}", msg.clone());
+                                                match msg.r#type {
+                                                    ftx_model::Type::Update | ftx_model::Type::Partial => (self.handler)(WebsocketEvent::FtxRsp(msg.clone()))?,
+                                                    _ => {
+                                                        info!("ftx websocket info:{:?}", msg.clone());
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                    else if subscription == Subscription::FtxOrderStream {
+                                        let msg: FtxWebsocketEvent = from_str(&message)?;
+                                        match msg {
+                                            FtxWebsocketEvent::FtxRsp(ref msg) => {
+                                                info!("ftx private msg:{:?}", msg.clone());
+                                                match msg.r#type {
+                                                    ftx_model::Type::Update | ftx_model::Type::Partial => (self.handler)(WebsocketEvent::FtxRsp(msg.clone()))?,
+                                                    ftx_model::Type::Subscribed => {
+                                                        self.ftx_sub_account(subscription, subs).await?;
+                                                    }
+                                                    _ => {
+                                                        info!("ftx websocket info:{:?}", msg.clone());
+                                                    }
+                                                }
+
+                                            }
                                         }
                                     }
         
@@ -366,6 +434,41 @@ impl Websocket {
 
     }
 
+    async fn ftx_sub_market(&mut self, subscription: Subscription, topics: &[&str]) -> Fallible<()> {
+
+        for symbol in topics {
+            let message = json!({
+                "op": "subscribe",
+                "channel": "orderbook",
+                "market": symbol
+            });
+            let sink = self.sinks.get_mut(&subscription).unwrap();
+            sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+            let message = json!({
+                "op": "subscribe",
+                "channel": "ticker",
+                "market": symbol
+            });
+            let sink = self.sinks.get_mut(&subscription).unwrap();
+            sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+            let message = json!({
+                "op": "subscribe",
+                "channel": "trades",
+                "market": symbol
+            });
+            let sink = self.sinks.get_mut(&subscription).unwrap();
+            sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+
+        }
+
+
+        Ok(())
+
+    }
+
     async fn okex_sub_market(&mut self, subscription: Subscription, topics: &[&str]) -> Fallible<()> {
 
         let mut market_topics = vec![HashMap::new()];
@@ -413,6 +516,26 @@ impl Websocket {
         }
 
         Ok(())
+    }
+
+    async fn ftx_sub_account(&mut self, subscription: Subscription, subs: &HashMap<Subscription, Vec<&str> >) -> Fallible<()> {
+        let topics = subs.get(&subscription).unwrap();
+        let message= json!({
+            "op": "subscribe",
+            "channel": "fills",
+        });
+        let sink = self.sinks.get_mut(&subscription).unwrap();
+        sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+        let message= json!({
+            "op": "subscribe",
+            "channel": "orders",
+        });
+        let sink = self.sinks.get_mut(&subscription).unwrap();
+        sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+        Ok(())
+
     }
 
     async fn okex_sub_account(&mut self, subscription: Subscription, subs: &HashMap<Subscription, Vec<&str> >) -> Fallible<()> {
@@ -482,6 +605,14 @@ impl Websocket {
         let signed_key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
         let signature = BASE64.encode(hmac::sign(&signed_key, sign_message.as_bytes()).as_ref());
         (key.to_string(), passphrase.to_string(), signature)
+    }
+
+    fn ftx_generate_signature(&mut self, subscription: Subscription, timestamp: &str) -> (String, String, String) {
+        let (key, secret, subaccount) = self.ftx_check_key(&subscription).expect("no key");
+        let sign_message = format!("{}websocket_login", timestamp);
+        let signed_key = hmac::Key::new(hmac::HMAC_SHA256, secret.as_bytes());
+        let signature = hex::encode(hmac::sign(&signed_key, sign_message.as_bytes()).as_ref());
+        (key.to_string(), subaccount.to_string(), signature) 
     }
 
 }

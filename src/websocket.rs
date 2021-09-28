@@ -66,6 +66,9 @@ impl Websocket {
 
             Subscription::OkexMarketStream => "wss://wsaws.okex.com:8443",
             Subscription::OkexOrderStream => "wss://wsaws.okex.com:8443",
+
+            Subscription::FtxMarketStream => "wss://ftx.com",
+            Subscription::FtxOrderStream => "wss://ftx.com",
         };
 
         let end = match subscription {
@@ -85,6 +88,10 @@ impl Websocket {
                 format!("/ws/v5/public"),
             Subscription::OkexOrderStream =>
                 format!("/ws/v5/private"),
+            Subscription::FtxMarketStream =>
+                format!("/ws"),
+            Subscription::FtxOrderStream =>
+                format!("/ws"),
         };
 
         trace!("[Websocket] Subscribing to '{:?}'", subscription.clone());
@@ -124,6 +131,13 @@ impl Websocket {
         match self.credentials.get(&subscription).as_ref() {
             None => Err(Error::NoApiKeySet.into()),
             Some((k, s, p)) => Ok((k, s, p)),
+        }
+    }
+
+    pub fn ftx_check_key(&self, subscription: &Subscription) -> Fallible<(&str, &str, &str)> {
+        match self.credentials.get(&subscription).as_ref() {
+            None => Err(Error::NoApiKeySet.into()),
+            Some((k, s, account)) => Ok((k, s, account)),
         }
     }
 

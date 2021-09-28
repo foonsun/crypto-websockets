@@ -2,10 +2,14 @@ use chrono::{DateTime, Utc};
 use crc32fast::Hasher;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSecondsWithFrac};
+use std::collections::BTreeMap;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
 
 pub type Symbol = String;
-
+pub type Coin = String;
+type Checksum = u32;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -32,12 +36,16 @@ pub enum Side {
 }
 
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Response {
+    pub channel: Option<String>,
     pub market: Option<Symbol>,
     pub r#type: Type,
     pub data: Option<ResponseData>,
+    
+    pub code: Option<String>,
+    pub msg: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -52,7 +60,7 @@ pub enum Type {
     Info,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum ResponseData {
@@ -63,7 +71,7 @@ pub enum ResponseData {
     Order(OrderInfo),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub enum Data {
     Ticker(Ticker),
     Trade(Trade),
@@ -73,14 +81,14 @@ pub enum Data {
 }
 
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum OrderType {
     Market,
     Limit,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize, PartialEq)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 /// Represents the status of the order.
 /// However, the REST and websockets APIs assign these values differently.
@@ -145,11 +153,11 @@ pub struct OrderInfo {
 #[derive(Copy, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Ticker {
-    pub bid: f64,
-    pub ask: f64,
-    pub bid_size: f64,
-    pub ask_size: f64,
-    pub last: f64,
+    pub bid: Decimal,
+    pub ask: Decimal,
+    pub bid_size: Decimal,
+    pub ask_size: Decimal,
+    pub last: Decimal,
     #[serde_as(as = "TimestampSecondsWithFrac<f64>")]
     pub time: DateTime<Utc>,
 }
@@ -158,8 +166,8 @@ pub struct Ticker {
 #[serde(rename_all = "camelCase")]
 pub struct Trade {
     pub id: u64,
-    pub price: f64,
-    pub size: f64,
+    pub price: Decimal,
+    pub size: Decimal,
     pub side: Side,
     pub liquidation: bool,
     pub time: DateTime<Utc>,
@@ -170,8 +178,8 @@ pub struct Trade {
 #[serde(rename_all = "camelCase")]
 pub struct OrderbookData {
     pub action: OrderbookAction,
-    pub bids: Vec<(f64, f64)>,
-    pub asks: Vec<(f64, f64)>,
+    pub bids: Vec<(Decimal, Decimal)>,
+    pub asks: Vec<(Decimal, Decimal)>,
     pub checksum: u32,
     #[serde_as(as = "TimestampSecondsWithFrac<f64>")]
     pub time: DateTime<Utc>,
@@ -190,8 +198,8 @@ pub enum OrderbookAction {
 #[derive(Debug)]
 pub struct Orderbook {
     pub symbol: Symbol,
-    pub bids: BTreeMap<f64, f64>,
-    pub asks: BTreeMap<f64, f64>,
+    pub bids: BTreeMap<Decimal, Decimal>,
+    pub asks: BTreeMap<Decimal, Decimal>,
 }
 impl Orderbook {
     pub fn new(symbol: Symbol) -> Orderbook {
@@ -214,20 +222,30 @@ impl Orderbook {
             }
             OrderbookAction::Update => {
                 for bid in &data.bids {
-                    if bid.1 == 0.0 {
+                    if bid.1 == dec!(0) {
                         self.bids.remove(&bid.0);
                     } else {
                         self.bids.insert(bid.0, bid.1);
                     }
                 }
                 for ask in &data.asks {
-                    if ask.1 == 0.0 {
+                    if ask.1 == dec!(0) {
                         self.asks.remove(&ask.0);
                     } else {
                         self.asks.insert(ask.0, ask.1);
                     }
                 }
             }
+        }
+    }
+
+    /// Internal helper function that serializes Decimal to String,
+    /// padding a 0 if the Decimal is a whole number
+    fn _pad_0(&self, value: Decimal) -> String {
+        if value.fract() == dec!(0) {
+            format!("{:.1}", value)
+        } else {
+            value.to_string()
         }
     }
 
@@ -242,13 +260,13 @@ impl Orderbook {
             let ask = asks_iter.next();
 
             if let Some(bid) = bid {
-                let bid_price = bid.0;
-                let bid_quantity = bid.1;
+                let bid_price = self._pad_0(*bid.0);
+                let bid_quantity = self._pad_0(*bid.1);
                 input.push(format!("{}:{}", bid_price, bid_quantity));
             }
             if let Some(ask) = ask {
-                let ask_price = ask.0;
-                let ask_quantity = ask.1;
+                let ask_price = self._pad_0(*ask.0);
+                let ask_quantity = self._pad_0(*ask.1);
                 input.push(format!("{}:{}", ask_price, ask_quantity));
             }
         }
@@ -266,24 +284,24 @@ impl Orderbook {
     }
 
     /// Returns the price of the best bid
-    pub fn bid_price(&self) -> Option<f64> {
+    pub fn bid_price(&self) -> Option<Decimal> {
         self.bids.keys().rev().next().cloned()
     }
 
     /// Returns the price of the best ask
-    pub fn ask_price(&self) -> Option<f64> {
+    pub fn ask_price(&self) -> Option<Decimal> {
         self.asks.keys().next().cloned()
     }
 
     /// Returns the midpoint between the best bid price and best ask price.
     /// Output is not rounded to the smallest price increment.
-    pub fn mid_price(&self) -> Option<f64> {
-        Some((self.bid_price()? + self.ask_price()?) / 2.0)
+    pub fn mid_price(&self) -> Option<Decimal> {
+        Some((self.bid_price()? + self.ask_price()?) / dec!(2))
     }
 
     /// Returns the price and quantity of the best bid
     /// (bid_price, bid_quantity)
-    pub fn best_bid(&self) -> Option<(f64, f64)> {
+    pub fn best_bid(&self) -> Option<(Decimal, Decimal)> {
         let (price, quantity) = self.bids.iter().rev().next()?;
 
         Some((*price, *quantity))
@@ -291,7 +309,7 @@ impl Orderbook {
 
     /// Returns the price and quantity of the best ask
     /// (ask_price, ask_quantity)
-    pub fn best_ask(&self) -> Option<(f64, f64)> {
+    pub fn best_ask(&self) -> Option<(Decimal, Decimal)> {
         let (price, quantity) = self.asks.iter().next()?;
 
         Some((*price, *quantity))
@@ -299,22 +317,22 @@ impl Orderbook {
 
     /// Returns the price and quantity of the best bid and best ask
     /// ((bid_price, bid_quantity), (ask_price, ask_quantity))
-    pub fn best_bid_and_ask(&self) -> Option<((f64, f64), (f64, f64))> {
+    pub fn best_bid_and_ask(&self) -> Option<((Decimal, Decimal), (Decimal, Decimal))> {
         Some((self.best_bid()?, self.best_ask()?))
     }
 
     /// Returns the expected execution price of a market order given the current
     /// orders in the order book. Returns None if the order size exceeds the
     /// liquidity available on that side of the order book.
-    pub fn quote(&self, side: Side, quantity: f64) -> Option<f64> {
+    pub fn quote(&self, side: Side, quantity: Decimal) -> Option<Decimal> {
         // Step 1: Match with orders in the book
         let mut bids_iter = self.bids.iter().rev();
         let mut asks_iter = self.asks.iter();
 
-        let mut fills: Vec<(f64, f64)> = Vec::new(); // (price, quantity)
+        let mut fills: Vec<(Decimal, Decimal)> = Vec::new(); // (price, quantity)
         let mut remaining = quantity;
 
-        while remaining > 0.0 {
+        while remaining > dec!(0) {
             let (price, quantity) = match side {
                 Side::Buy => asks_iter.next()?,
                 Side::Sell => bids_iter.next()?,
@@ -325,7 +343,7 @@ impl Orderbook {
                 fills.push((*price, *quantity));
             } else {
                 fills.push((*price, remaining));
-                remaining = 0.0;
+                remaining = dec!(0);
             }
         }
 
@@ -349,13 +367,13 @@ pub struct Fill {
     pub quote_currency: Option<Coin>,
     pub r#type: String, // e.g. "order"
     pub side: Side,
-    pub price: f64,
-    pub size: f64,
+    pub price: Decimal,
+    pub size: Decimal,
     pub order_id: u64,
     pub trade_id: u64,
     pub time: DateTime<Utc>,
-    pub fee: f64,
-    pub fee_rate: f64,
+    pub fee: Decimal,
+    pub fee_rate: Decimal,
     pub fee_currency: Coin,
     pub liquidity: Liquidity,
 }
@@ -372,11 +390,11 @@ pub enum Liquidity {
 pub struct Market {
     name: Symbol,
     enabled: bool,
-    price_increment: f64,
-    size_increment: f64,
+    price_increment: Decimal,
+    size_increment: Decimal,
     #[serde(rename = "type")]
     pub market_type: MarketType,
-    base_currency: Option<String>,
-    quote_currency: Option<String>>,
-    underlying: Option<String>,
+    base_currency: Option<Coin>,
+    quote_currency: Option<Coin>,
+    underlying: Option<Coin>,
 }

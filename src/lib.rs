@@ -5,6 +5,7 @@ pub mod binance_model;
 pub mod binance_uswap_model;
 pub mod huobi_uswap_model;
 pub mod okex_model;
+pub mod ftx_model;
 pub mod models;
 pub mod websocket;
 pub mod subscription;
