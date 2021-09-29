@@ -44,7 +44,7 @@ pub struct Response {
     pub r#type: Type,
     pub data: Option<ResponseData>,
     
-    pub code: Option<String>,
+    pub code: Option<i32>,
     pub msg: Option<String>,
 }
 

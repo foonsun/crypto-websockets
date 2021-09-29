@@ -106,8 +106,8 @@ impl Websocket {
             }
             if *subscription == Subscription::FtxOrderStream {
                 self.subscribe(Subscription::FtxOrderStream, topics).await?;
-                let timestamp = chrono::Utc::now().timestamp_millis().to_string();
-                let (key, subaccount, signature) = self.ftx_generate_signature(subscription.clone(), &timestamp);
+                let timestamp = chrono::Utc::now().timestamp_millis();
+                let (key, subaccount, signature) = self.ftx_generate_signature(subscription.clone(), &timestamp.to_string());
                 
                 let message = json!({
                     "op": "login",
@@ -120,6 +120,9 @@ impl Websocket {
                 });
                 let sink = self.sinks.get_mut(&Subscription::FtxOrderStream).unwrap();
                 sink.send(tungstenite::Message::Text(message.to_string())).await?;
+
+
+                self.ftx_sub_account(subscription.clone(), &subs).await?;
             }
         }
 
@@ -143,32 +146,10 @@ impl Websocket {
 
     }
 
-    async fn rx_handler1(&mut self, subs: &HashMap<Subscription, Vec<&str>>) -> Fallible<()> {
-        loop {
-            tokio::select! {
-                _ = self.ping_timer.tick() => {
-                    println!("ping timer.");
-                }
-                Some((msg, token)) = self.streams.next() => {
-
-                    println!("msg:{:?} {:?}", msg, token);
-                }
-
-            };
-
-        }
-
-
-        Ok(())
-    
-    }
-
-
     async fn rx_handler(&mut self, subs: &HashMap<Subscription, Vec<&str>>) -> Fallible<()> {
         loop {
             tokio::select! {
                 _ = self.ping_timer.tick() => {
-                    println!("ping timer");
                     for subscription in subs.keys() {
                         if *subscription == Subscription::FtxOrderStream || *subscription == Subscription::FtxMarketStream {
                             let topics = subs.get(&subscription).unwrap();
@@ -292,6 +273,9 @@ impl Websocket {
                                                 info!("Ftx msg: {:?}", msg.clone());
                                                 match msg.r#type {
                                                     ftx_model::Type::Update | ftx_model::Type::Partial => (self.handler)(WebsocketEvent::FtxRsp(msg.clone()))?,
+                                                    ftx_model::Type::Error => {
+                                                        error!("ftx websocket error:{:?}", msg.clone());
+                                                    },
                                                     _ => {
                                                         info!("ftx websocket info:{:?}", msg.clone());
                                                     }
@@ -307,11 +291,11 @@ impl Websocket {
                                                 info!("ftx private msg:{:?}", msg.clone());
                                                 match msg.r#type {
                                                     ftx_model::Type::Update | ftx_model::Type::Partial => (self.handler)(WebsocketEvent::FtxRsp(msg.clone()))?,
-                                                    ftx_model::Type::Subscribed => {
-                                                        self.ftx_sub_account(subscription, subs).await?;
-                                                    }
+                                                    ftx_model::Type::Error => {
+                                                        error!("ftx websocket error:{:?}", msg.clone());
+                                                    },
                                                     _ => {
-                                                        info!("ftx websocket info:{:?}", msg.clone());
+                                                        trace!("ftx websocket info:{:?}", msg.clone());
                                                     }
                                                 }
 
