@@ -13,7 +13,8 @@ async fn main() -> Fallible<()> {
     // let secret_key = "";
     let access_key = "";
     let secret_key = "";
-    let passphrase = "";
+    // let passphrase = "";
+    let subaccount = "";
     let mut credentials: HashMap<Subscription, (String, String, String) > = HashMap::new();
     /*
     let binance_access_key = "".to_string();
@@ -22,7 +23,9 @@ async fn main() -> Fallible<()> {
     */
 
     
-    credentials.insert(Subscription::OkexOrderStream, (access_key.to_string(), secret_key.to_string(), passphrase.to_string()));
+    // credentials.insert(Subscription::OkexOrderStream, (access_key.to_string(), secret_key.to_string(), passphrase.to_string()));
+
+    credentials.insert(Subscription::FtxOrderStream, (access_key.to_string(), secret_key.to_string(), subaccount.to_string()));
 
     let mut ws: Websocket = Websocket::new(credentials, |event: WebsocketEvent| {
         match event {
@@ -53,6 +56,9 @@ async fn main() -> Fallible<()> {
             WebsocketEvent::OkexOrder(event) => println!{"Okex Order: {:?}", event},
             WebsocketEvent::OkexAccount(event) => println!{"Okex Account:{:?}", event},
             WebsocketEvent::OkexPosition(event) => println!{"Okex Position: {:?}", event},
+
+
+            WebsocketEvent::FtxRsp(event) => println!{"Ftx Rsp: {:?}", event},
 
             _ => (),
         };
@@ -117,7 +123,18 @@ async fn main() -> Fallible<()> {
     let okex_order_topics = vec![
         "SWAP"
     ];
-    subs.insert(Subscription::OkexOrderStream, okex_order_topics);
+    // subs.insert(Subscription::OkexOrderStream, okex_order_topics);
+
+
+    let ftx_market_topics = vec![
+        "BTC-PERP"
+    ];
+    subs.insert(Subscription::FtxMarketStream, ftx_market_topics);
+
+    let ftx_order_topics = vec![
+    ];
+    subs.insert(Subscription::FtxOrderStream, ftx_order_topics);
+
 
     if let Err(e) = ws.connect(subs).await {
         println!("### websocket error: {:?}", e);
