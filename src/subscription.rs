@@ -164,7 +164,7 @@ impl Websocket {
 
                 Some((msg, token)) = self.streams.next() => {
                     match msg {
-                        StreamYield::Finished(s) => warn!("finished stream: {:?}", s.token()),
+                        StreamYield::Finished(s) => warn!("finished stream: {:?}", &s.token()),
                         StreamYield::Item(s) => {
                             let message = s.unwrap();
                             let subscription = self.tokens.get(&token).unwrap().clone();
