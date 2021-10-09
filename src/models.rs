@@ -72,6 +72,7 @@ pub enum WebsocketEvent {
     BinanceUSwapOrderBook(BnWsRx<binance_uswap_model::OrderBook>),
     BinanceUSwapDepthOrderBookEvent(BnWsRx<binance_uswap_model::DepthOrderBookEvent>),
     BinanceUSwapEtpNavEvent(BnWsRx<binance_uswap_model::EtpNavEvent>),
+    BinanceUSwapEtpKlineEvent(BnWsRx<binance_uswap_model::EtpKlineEvent>),
 
 
     //Huobi USDT Cross Swap
@@ -152,6 +153,7 @@ pub enum BinanceUSwapWebsocketEvent {
     BinanceUSwapOrderBook(BnWsRx<binance_uswap_model::OrderBook>),
     BinanceUSwapDepthOrderBookEvent(BnWsRx<binance_uswap_model::DepthOrderBookEvent>),
     BinanceUSwapEtpNavEvent(BnWsRx<binance_uswap_model::EtpNavEvent>),
+    BinanceUSwapEtpKlineEvent(BnWsRx<binance_uswap_model::EtpKlineEvent>),
 
     Text(String),
 }

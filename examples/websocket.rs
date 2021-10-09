@@ -35,6 +35,7 @@ async fn main() -> Fallible<()> {
             WebsocketEvent::BinanceSpotOrderTrade(event) => println!{"BinanceSpotOrderTrade: {:?}", event},
 
             WebsocketEvent::BinanceUSwapEtpNavEvent(event) => println!{"BinanceUSwapEtpNavEvent: {:?}", event},
+            WebsocketEvent::BinanceUSwapEtpKlineEvent(event) => println!{"BinanceUSwapEtpKlineEvent: {:?}", event},
             WebsocketEvent::BinanceUSwapOrderBook(event) => println!{"BinanceUSwapEtpNavEvent: {:?}", event},
             WebsocketEvent::BinanceUSwapDepthOrderBookEvent(event) => println!{"BinanceUSwapDepthOrderBook: {:?}", event},
             WebsocketEvent::BinanceUSwapAccountUpdateEvent(event) => println!{"BinanceUSwapAccountUpdateEvent: {:?}", event},
@@ -89,14 +90,15 @@ async fn main() -> Fallible<()> {
    */
 
     let binance_uswap_market_topics = vec![
-        "dotusdt@depth5@100ms",
-        "linkusdt@depth5@100ms",
+        // "dotusdt@depth5@100ms",
+        // "linkusdt@depth5@100ms",
         // "dotusdt@depth@100ms",
         // "linkusdt@depth@100ms",
-        // "BTCUP@tokenNav",
+        "BTCUP@tokenNav",
+        "BTCUP@nav_kline_1m",
     ];
 
-    // subs.insert(Subscription::BinanceUSwapMStream, binance_uswap_market_topics);
+    subs.insert(Subscription::BinanceUSwapMStream, binance_uswap_market_topics);
 
     let huobi_uswap_market_topics = vec![
         "market.BTC-USDT.kline.1min",
@@ -129,11 +131,11 @@ async fn main() -> Fallible<()> {
     let ftx_market_topics = vec![
         "BTC-PERP"
     ];
-    subs.insert(Subscription::FtxMarketStream, ftx_market_topics);
+    // subs.insert(Subscription::FtxMarketStream, ftx_market_topics);
 
-    let ftx_order_topics = vec![
-    ];
-    subs.insert(Subscription::FtxOrderStream, ftx_order_topics);
+    // let ftx_order_topics = vec![
+    // ];
+    // subs.insert(Subscription::FtxOrderStream, ftx_order_topics);
 
 
     if let Err(e) = ws.connect(subs).await {

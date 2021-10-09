@@ -1171,6 +1171,49 @@ pub struct EtpNavEvent {
     pub to: f64,
 }
 
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EtpKlineEvent {
+    #[serde(rename = "e")]
+    pub event_type: String,
+    #[serde(rename = "E")]
+    pub event_time: u64,
+    #[serde(rename = "s")]
+    pub symbol: String,
+    #[serde(rename = "k")]
+    pub kline: EtpNavKline,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EtpNavKline {
+    #[serde(rename = "t")]
+    pub kline_start_ts: u64,
+    #[serde(rename = "T")]
+    pub kline_end_ts: u64,
+    #[serde(rename = "s")]
+    pub symbol: String,
+    #[serde(rename = "i")]
+    pub interval: String,
+    #[serde(rename = "f")]
+    pub first_nav_ts: u64,
+    #[serde(rename = "L")] 
+    pub last_nav_ts: u64,
+    #[serde(rename = "o")]
+    pub open: String,
+    #[serde(rename = "c")]
+    pub close: String,
+    #[serde(rename = "h")]
+    pub high: String,
+    #[serde(rename = "l")]
+    pub low: String,
+    #[serde(rename = "v")]
+    pub actual_leverage: String,
+    #[serde(rename = "n")]
+    pub nav_count: u32,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DepositAddress {
     pub address: String,
