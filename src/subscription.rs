@@ -166,7 +166,7 @@ impl Websocket {
                     match msg {
                         StreamYield::Finished(s) => warn!("finished stream: {:?}", &token),
                         StreamYield::Item(s) => {
-                            let message = s.unwrap();
+                            let message = s.unwrap_or(Message::Text("".to_string()));
                             let subscription = self.tokens.get(&token).unwrap().clone();
                             let bin = match message {
                                 Message::Text(message) => {
