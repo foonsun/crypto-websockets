@@ -59,6 +59,7 @@ impl Websocket {
             Subscription::BinanceSpotMStream => "wss://stream.binance.com:9443",
             Subscription::BinanceSpotOrder => "wss://stream.binance.com:9443",
             Subscription::BinanceUSwapMStream => "wss://fstream.binance.com",
+            Subscription::BinanceBLVTStream => "wss://nbstream.binance.com/lvt-p",
             Subscription::BinanceUSwapOrder => "wss://fstream.binance.com",
 
             Subscription::HuobiUSwapMarketStream => "wss://api.hbdm.vn",
@@ -77,6 +78,8 @@ impl Websocket {
             Subscription::BinanceSpotOrder => 
                 format!("/stream?streams={}", topics.join("/")),
             Subscription::BinanceUSwapMStream => 
+                format!("/stream?streams={}", topics.join("/")),
+            Subscription::BinanceBLVTStream => 
                 format!("/stream?streams={}", topics.join("/")),
             Subscription::BinanceUSwapOrder =>
                 format!("/ws/{}", topics.join("/")),

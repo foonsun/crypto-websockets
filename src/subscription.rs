@@ -52,6 +52,9 @@ impl Websocket {
             if *subscription == Subscription::BinanceUSwapMStream {
                 self.subscribe(Subscription::BinanceUSwapMStream, topics).await?;
             }
+            if *subscription == Subscription::BinanceBLVTStream {
+                self.subscribe(Subscription::BinanceBLVTStream, topics).await?;
+            }
             if *subscription == Subscription::BinanceUSwapOrder {
                 self.subscribe(Subscription::BinanceUSwapOrder, topics).await?;
             }
@@ -192,7 +195,7 @@ impl Websocket {
                                             _ => (),
                                         }
                                     } 
-                                    else if subscription == Subscription::BinanceUSwapMStream {
+                                    else if subscription == Subscription::BinanceUSwapMStream || subscription == Subscription::BinanceBLVTStream {
                                         let msg: BinanceUSwapWebsocketEvent = from_str(&message)?;
                                         match msg {
                                             BinanceUSwapWebsocketEvent::BinanceUSwapBookTickerEvent(ref msg) => (self.handler)(WebsocketEvent::BinanceUSwapBookTickerEvent(msg.clone()))?,

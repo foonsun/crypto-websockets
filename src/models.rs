@@ -13,7 +13,8 @@ use crate::ftx_model;
 pub enum Subscription {
     BinanceSpotMStream,
     BinanceSpotOrder,
-    BinanceUSwapMStream,
+    BinanceUSwapMStream, //blvt use uswap.
+    BinanceBLVTStream,
     BinanceUSwapOrder,
 
     HuobiUSwapMarketStream,
@@ -73,6 +74,8 @@ pub enum WebsocketEvent {
     BinanceUSwapDepthOrderBookEvent(BnWsRx<binance_uswap_model::DepthOrderBookEvent>),
     BinanceUSwapEtpNavEvent(BnWsRx<binance_uswap_model::EtpNavEvent>),
     BinanceUSwapEtpKlineEvent(BnWsRx<binance_uswap_model::EtpKlineEvent>),
+
+
 
 
     //Huobi USDT Cross Swap
