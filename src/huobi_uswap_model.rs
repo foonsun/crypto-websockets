@@ -101,8 +101,8 @@ pub struct Kline {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BBO {
-    pub bid: (f64, f64),
-    pub ask: (f64, f64),
+    pub bid: Option<(f64, f64)>,
+    pub ask: Option<(f64, f64)>,
     pub id: u64,
     pub ts: u64,
     pub version: u64,
