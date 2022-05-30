@@ -133,6 +133,8 @@ pub struct TradeDetailItem {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Account {
     pub margin_mode: String,
+    pub symbol: String,
+    pub contract_code: String,
     pub margin_account: String,
     pub margin_asset: String,
     pub margin_balance: f64,
