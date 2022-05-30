@@ -139,12 +139,12 @@ pub struct Account {
     pub margin_static: f64,
     pub margin_position: f64,
     pub margin_frozen: f64,
+    pub margin_available: f64,
     pub profit_real: f64,
     pub profit_unreal: f64,
     pub risk_rate: Option<f64>,
     pub liquidation_price: Option<f64>,
     pub withdraw_available: f64,
-    pub contract_detail: Vec<AccountDetail>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
