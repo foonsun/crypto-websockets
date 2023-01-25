@@ -155,7 +155,7 @@ impl Websocket {
                 _ = self.ping_timer.tick() => {
                     for subscription in subs.keys() {
                         if *subscription == Subscription::FtxOrderStream || *subscription == Subscription::FtxMarketStream {
-                            let topics = subs.get(&subscription).unwrap();
+                            let _topics = subs.get(&subscription).unwrap();
                             let message= json!({
                                 "op": "ping",
                             });
@@ -167,7 +167,7 @@ impl Websocket {
 
                 Some((msg, token)) = self.streams.next() => {
                     match msg {
-                        StreamYield::Finished(s) => warn!("finished stream: {:?}", &token),
+                        StreamYield::Finished(_) => warn!("finished stream: {:?}", &token),
                         StreamYield::Item(s) => {
                             let message = s.unwrap_or(Message::Text("".to_string()));
                             let subscription = self.tokens.get(&token).unwrap().clone();
@@ -391,6 +391,7 @@ impl Websocket {
                                 Message::Pong(c) => (),
                                 Message::Ping(d) => (),
                                 Message::Close(..) => return Err(failure::format_err!("Socket closed")),
+                                Message::Frame(_) => todo!(),
                             };
 
 
@@ -622,9 +623,10 @@ pub fn sign_hmac_sha256_base64(secret: &str, digest: &str) -> String {
 }
 
 pub fn percent_encode(source: &str) -> String {
-    use percent_encoding::{define_encode_set, utf8_percent_encode, USERINFO_ENCODE_SET};
-    define_encode_set! {
-        pub CUSTOM_ENCODE_SET = [USERINFO_ENCODE_SET] | { '+', ',' }
-    }
-    utf8_percent_encode(source, CUSTOM_ENCODE_SET).to_string()
+    use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+    // use percent_encoding::{define_encode_set, utf8_percent_encode, USERINFO_ENCODE_SET};
+    // define_encode_set! {
+        // pub CUSTOM_ENCODE_SET = [USERINFO_ENCODE_SET] | { '+', ',' }
+    // }
+    utf8_percent_encode(source, NON_ALPHANUMERIC).to_string()
 }

@@ -157,6 +157,8 @@ impl Websocket {
             Message::Pong(c) => c,
             Message::Ping(d) => d,
             Message::Close(..) => return Err(failure::format_err!("Socket closed")),
+            Message::Frame(_) => todo!(),
+            // Message::Frame(..) => return Err(failure::format_err!("Socket Raw"))
         };
 
         let mut d = GzDecoder::new(&*bin);
